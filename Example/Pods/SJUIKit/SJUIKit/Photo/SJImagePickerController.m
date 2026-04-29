@@ -97,8 +97,9 @@ NS_ASSUME_NONNULL_BEGIN
         else {
             // Change Rect to position Popover
             UIPopoverPresentationController *popPresenter = [alertController popoverPresentationController];
-            popPresenter.sourceView = [UIApplication sharedApplication].keyWindow;
-            popPresenter.sourceRect = CGRectMake(0, [UIApplication sharedApplication].keyWindow.bounds.size.height, [UIApplication sharedApplication].keyWindow.bounds.size.width, 0);
+            UIView *sourceView = presentingViewController.view;
+            popPresenter.sourceView = sourceView;
+            popPresenter.sourceRect = CGRectMake(0, sourceView.bounds.size.height, sourceView.bounds.size.width, 0);
             popPresenter.permittedArrowDirections = UIPopoverArrowDirectionDown;
             [presentingViewController presentViewController:alertController animated:YES completion:nil];
         }

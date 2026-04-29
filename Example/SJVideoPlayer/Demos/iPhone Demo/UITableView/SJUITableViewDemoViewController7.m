@@ -220,9 +220,9 @@ typedef NS_ENUM(NSUInteger, SJTestPageItemType) {
      
         CGFloat topMargin = 20;
         if (@available(iOS 11.0, *)) {
-            topMargin = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
+            topMargin = self.view.window.safeAreaInsets.top;
         }
-        CGFloat width = UIApplication.sharedApplication.keyWindow.bounds.size.width;
+        CGFloat width = self.view.window.bounds.size.width;
         CGFloat playerViewHeight = width * 9 / 16.0;
         CGFloat menuBarHeight = 49;
         CGFloat pageHeaderViewHeight = topMargin + playerViewHeight + menuBarHeight;

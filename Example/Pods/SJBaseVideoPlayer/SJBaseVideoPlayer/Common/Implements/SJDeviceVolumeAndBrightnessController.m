@@ -14,6 +14,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <MediaPlayer/MPVolumeView.h>
 #import "UIView+SJBaseVideoPlayerExtended.h"
+#import "SJWindowResolver.h"
 
 #if __has_include(<Masonry/Masonry.h>)
 #import <Masonry/Masonry.h>
@@ -370,9 +371,9 @@ static NSNotificationName const SJDeviceBrightnessDidChangeNotification = @"SJDe
         for ( id<SJDeviceVolumeAndBrightnessController> controller in mControllers ) {
             UIView *targetView = controller.target;
             UIWindow *targetViewWindow = targetView.window;
-            UIWindow *appKeyWindow = UIApplication.sharedApplication.keyWindow;
-            if ( targetViewWindow == nil || targetViewWindow != appKeyWindow ) {
-                // 1. 未显示或不在keyWindow中时则略过
+            UIWindow *preferredWindow = SJPreferredWindowForView(targetView);
+            if ( targetViewWindow == nil || targetViewWindow != preferredWindow ) {
+                // 1. 未显示或不在当前 scene window 中时则略过
                 continue;
             }
             
@@ -416,8 +417,13 @@ static NSNotificationName const SJDeviceBrightnessDidChangeNotification = @"SJDe
 
 // 隐藏系统音量条
 - (void)_makeHidingForSysVolumeView {
-    UIWindow *window = UIApplication.sharedApplication.keyWindow;
-    if ( mSysVolumeView.superview != window ) [window addSubview:mSysVolumeView];
+    UIWindow *window = nil;
+    for ( id<SJDeviceVolumeAndBrightnessController> controller in mControllers ) {
+        window = SJPreferredWindowForView(controller.target);
+        if ( window != nil ) break;
+    }
+    if ( window == nil ) window = SJPreferredWindowForView(nil);
+    if ( window != nil && mSysVolumeView.superview != window ) [window addSubview:mSysVolumeView];
 }
 
 // 显示系统音量条

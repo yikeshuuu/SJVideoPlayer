@@ -7,6 +7,7 @@
 
 #import "SJFitOnScreenManager.h"
 #import "UIViewController+SJBaseVideoPlayerExtended.h"
+#import "SJWindowResolver.h"
 
 NS_ASSUME_NONNULL_BEGIN
 static NSNotificationName const SJFitOnScreenManagerTransitioningValueDidChangeNotification = @"SJFitOnScreenManagerTransitioningValueDidChange";
@@ -162,11 +163,7 @@ static NSNotificationName const SJFitOnScreenManagerTransitioningValueDidChangeN
 }
 
 - (UIViewController *)topMostController {
-    UIViewController *topController = UIApplication.sharedApplication.keyWindow.rootViewController;
-    while( topController.presentedViewController != nil ) {
-        topController = topController.presentedViewController;
-    }
-    return topController;
+    return SJTopViewControllerForView(self.superview);
 }
 
 - (void)setInnerFitOnScreen:(BOOL)innerFitOnScreen {
@@ -209,7 +206,8 @@ static NSNotificationName const SJFitOnScreenManagerTransitioningValueDidChangeN
 }
 
 - (void)_presentedAnimationWithDuration:(NSTimeInterval)duration completionHandler:(nullable SJAnimationCompletionHandler)completion {
-    CGRect frame = [self.superview convertRect:self.superview.bounds toView:UIApplication.sharedApplication.keyWindow];
+    UIWindow *window = SJPreferredWindowForView(self.superview);
+    CGRect frame = [self.superview convertRect:self.superview.bounds toView:window];
     self.target.frame = frame;
     [self.viewController.view addSubview:self.target];
     [UIView animateWithDuration:duration animations:^{
@@ -222,7 +220,8 @@ static NSNotificationName const SJFitOnScreenManagerTransitioningValueDidChangeN
 }
 
 - (void)_dismissedAnimationWithDuration:(NSTimeInterval)duration completionHandler:(nullable SJAnimationCompletionHandler)completion {
-    CGRect frame = [self.superview convertRect:self.superview.bounds toView:UIApplication.sharedApplication.keyWindow];
+    UIWindow *window = SJPreferredWindowForView(self.superview);
+    CGRect frame = [self.superview convertRect:self.superview.bounds toView:window];
     [UIView animateWithDuration:duration animations:^{
         self.target.frame = frame;
         [self.target layoutIfNeeded];

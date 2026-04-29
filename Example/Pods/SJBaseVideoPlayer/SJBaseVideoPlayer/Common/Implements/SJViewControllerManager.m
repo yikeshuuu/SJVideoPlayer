@@ -8,6 +8,7 @@
 #import "SJViewControllerManager.h"
 #import "UIView+SJBaseVideoPlayerExtended.h"
 #import "SJRotationManagerInternal.h"
+#import "SJWindowResolver.h"
 
 NS_ASSUME_NONNULL_BEGIN
 @interface SJViewControllerManager ()
@@ -90,8 +91,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)setNeedsStatusBarAppearanceUpdate {
-    [UIApplication.sharedApplication.keyWindow.rootViewController setNeedsStatusBarAppearanceUpdate];
-    
+    [SJRootViewControllerForView(_presentView) setNeedsStatusBarAppearanceUpdate];
+
     if ( [_rotationManager isKindOfClass:SJRotationManager.class] && _rotationManager.isFullscreen ) {
         SJRotationManager *rotationManager = (id)_rotationManager;
         [rotationManager.window.rootViewController setNeedsStatusBarAppearanceUpdate];

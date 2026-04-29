@@ -15,6 +15,7 @@
 #import "SJRotationFullscreenWindow.h"
 #import "SJRotationDefines.h"
 #import "SJTimerControl.h"
+#import "SJWindowResolver.h"
 #import <objc/message.h>
 
 @interface SJRotationActivation : NSObject
@@ -253,7 +254,13 @@
 
 - (void)_prepareWindowForRotation {
     if ( @available(iOS 13.0, *) ) {
-        _window = [SJRotationFullscreenWindow.alloc initWithWindowScene:UIApplication.sharedApplication.keyWindow.windowScene ?: (UIWindowScene *)UIApplication.sharedApplication.connectedScenes.anyObject delegate:self];
+        UIWindowScene *windowScene = SJWindowSceneForView(self.superview);
+        if ( windowScene != nil ) {
+            _window = [SJRotationFullscreenWindow.alloc initWithWindowScene:windowScene delegate:self];
+        }
+        else {
+            _window = [SJRotationFullscreenWindow.alloc initWithFrame:UIScreen.mainScreen.bounds delegate:self];
+        }
     }
     else {
         _window = [SJRotationFullscreenWindow.alloc initWithFrame:UIScreen.mainScreen.bounds delegate:self];
@@ -350,11 +357,11 @@ API_DEPRECATED("deprecated!", ios(13.0, 16.0)) @implementation UIViewController 
 //        }
 //    }
     
-    UIWindow *keyWindow = UIApplication.sharedApplication.keyWindow;
+    UIWindow *preferredWindow = SJPreferredWindowForView(self.view);
     UIWindow *otherWindow = self.view.window;
-    if ( [keyWindow isKindOfClass:SJRotationFullscreenWindow.class] && otherWindow != nil ) {
-        SJRotationManager *manager = ((SJRotationFullscreenWindow *)keyWindow).rotationManager;
-        UIWindow *superviewWindow = manager.superview.window;
+    if ( [preferredWindow isKindOfClass:SJRotationFullscreenWindow.class] && otherWindow != nil ) {
+        SJRotationManager *manager = ((SJRotationFullscreenWindow *)preferredWindow).rotationManager;
+        UIWindow *superviewWindow = SJPreferredWindowForView(manager.superview);
         if ( superviewWindow != otherWindow ) {
             [self sj_setContentOverlayInsets:insets andLeftMargin:leftMargin rightMargin:rightMargin];
         }

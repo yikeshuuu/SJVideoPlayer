@@ -11,6 +11,7 @@
 #import <SJUIKit/NSAttributedString+SJMake.h>
 #import <Masonry/Masonry.h>
 #import <SJBaseVideoPlayer/SJDanmakuItem.h>
+#import <SJBaseVideoPlayer/SJWindowResolver.h>
 
 @protocol SJSendCommentViewControllerDelegate;
 
@@ -231,10 +232,13 @@ static SJEdgeControlButtonItemTag SJKeyboardDemoSendCommentItemTag = 1;
     NSValue *userInfoFrameValue = userInfo[UIKeyboardFrameEndUserInfoKey];
     CGRect keyboardFrame = userInfoFrameValue.CGRectValue;
     if ( @available(iOS 14.0, *) ) {
-        for ( UIWindow *window in UIApplication.sharedApplication.windows ) {
+        UIWindowScene *windowScene = SJWindowSceneForView(self.view);
+        for ( UIWindow *window in windowScene.windows ) {
             if ( [NSStringFromClass(window.class) hasPrefix:@"UIRemoteK"] ) {
                 if ( window.bounds.size.width != keyboardFrame.size.width ) {
-                    keyboardFrame = [[[[UIApplication.sharedApplication.windows.lastObject subviews] firstObject] subviews] firstObject].frame;
+                    UIView *containerView = window.subviews.firstObject;
+                    UIView *keyboardView = containerView.subviews.firstObject;
+                    if ( keyboardView != nil ) keyboardFrame = keyboardView.frame;
                 }
             }
         }

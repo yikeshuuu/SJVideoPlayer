@@ -8,6 +8,7 @@
 
 #import "SJSmallViewFloatingTransitionController.h"
 #import <objc/message.h>
+#import <SJBaseVideoPlayer/SJWindowResolver.h>
 #import "UIView+SJBaseVideoPlayerExtended.h"
 #import "NSObject+SJObserverHelper.h"
 #import "SJBaseVideoPlayerConst.h"
@@ -225,19 +226,8 @@ SVTC_setY(UIView *view, CGFloat y) {
 }
  
 UIKIT_STATIC_INLINE __kindof UIViewController *
-SVTC_getTopViewController(void) {
-    UIViewController *vc = UIApplication.sharedApplication.keyWindow.rootViewController;
-    while (  [vc isKindOfClass:[UINavigationController class]] ||
-             [vc isKindOfClass:[UITabBarController class]] ||
-              vc.presentedViewController ) {
-        if ( [vc isKindOfClass:[UINavigationController class]] )
-            vc = [(UINavigationController *)vc topViewController];
-        if ( [vc isKindOfClass:[UITabBarController class]] )
-            vc = [(UITabBarController *)vc selectedViewController];
-        if ( vc.presentedViewController )
-            vc = vc.presentedViewController;
-    }
-    return vc;
+SVTC_getTopViewController(UIView *view) {
+    return SJTopViewControllerForView(view);
 }
 
 #pragma mark -
@@ -266,7 +256,7 @@ SVTC_getTopViewController(void) {
     }
     
     _playbackViewController = viewController;
-    UIWindow *window = UIApplication.sharedApplication.keyWindow;
+    UIWindow *window = SJPreferredWindowForView(_targetSuperview ?: _target);
     if ( _playbackViewController == nil || window == nil )
         return NO;
       

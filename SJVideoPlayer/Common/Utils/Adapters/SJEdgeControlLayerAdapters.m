@@ -22,23 +22,76 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-FOUNDATION_STATIC_INLINE BOOL
-_isIPhoneXSeries(void) {
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone) {
-        if ( @available(iOS 13.0, *) ) {
-            for ( UIScene *scene in UIApplication.sharedApplication.connectedScenes ) {
-                if ( [scene isKindOfClass:UIWindowScene.class] ) {
-                    UIWindow *window = [(UIWindowScene *)scene windows].firstObject;
-                    if ( window.isKeyWindow ) return window.safeAreaInsets.bottom > 0.0;
+FOUNDATION_STATIC_INLINE UIWindow * _Nullable
+_SJPreferredWindow(void) {
+    if ( @available(iOS 13.0, *) ) {
+        UIWindowScene *candidateScene = nil;
+        for ( UIScene *scene in UIApplication.sharedApplication.connectedScenes ) {
+            if ( ![scene isKindOfClass:UIWindowScene.class] ) continue;
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+            if ( scene.activationState == UISceneActivationStateForegroundActive ) {
+                for ( UIWindow *window in windowScene.windows ) {
+                    if ( window.isKeyWindow ) return window;
                 }
+                if ( candidateScene == nil ) candidateScene = windowScene;
+            }
+            else if ( candidateScene == nil && scene.activationState == UISceneActivationStateForegroundInactive ) {
+                candidateScene = windowScene;
             }
         }
+        if ( candidateScene != nil ) {
+            for ( UIWindow *window in candidateScene.windows ) {
+                if ( window.isKeyWindow ) return window;
+            }
+            for ( UIWindow *window in candidateScene.windows ) {
+                if ( !window.hidden && window.windowLevel == UIWindowLevelNormal ) return window;
+            }
+            return candidateScene.windows.firstObject;
+        }
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    id<UIApplicationDelegate> delegate = UIApplication.sharedApplication.delegate;
+    if ( [delegate respondsToSelector:@selector(window)] ) return delegate.window;
+#pragma clang diagnostic pop
+    return nil;
+}
+
+FOUNDATION_STATIC_INLINE BOOL
+_isIPhoneXSeries(void) {
+    if ( UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone ) {
         if ( @available(iOS 11.0, *) ) {
-            UIWindow *window = [UIApplication sharedApplication].delegate.window;
-            return window.safeAreaInsets.bottom > 0.0;
+            return _SJPreferredWindow().safeAreaInsets.bottom > 0.0;
         }
     }
     return NO;
+}
+
+FOUNDATION_STATIC_INLINE UIInterfaceOrientation
+_SJCurrentInterfaceOrientation(UIView *view) {
+    if ( @available(iOS 13.0, *) ) {
+        UIInterfaceOrientation orientation = view.window.windowScene.interfaceOrientation;
+        if ( orientation != UIInterfaceOrientationUnknown ) return orientation;
+        orientation = _SJPreferredWindow().windowScene.interfaceOrientation;
+        if ( orientation != UIInterfaceOrientationUnknown ) return orientation;
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return UIApplication.sharedApplication.statusBarOrientation;
+#pragma clang diagnostic pop
+}
+
+FOUNDATION_STATIC_INLINE BOOL
+_SJNeedsFullscreenLayout(UIView *view, struct SJ_Screen screen) {
+    UIInterfaceOrientation orientation = _SJCurrentInterfaceOrientation(view);
+    if ( UIInterfaceOrientationIsLandscape(orientation) ) return YES;
+    CGSize size = view.bounds.size;
+    return (size.width == screen.max && size.height == screen.min);
+}
+
+FOUNDATION_STATIC_INLINE BOOL
+_SJNeedsTopSpacing(UIView *view) {
+    return UIInterfaceOrientationIsLandscape(_SJCurrentInterfaceOrientation(view)) == NO;
 }
 
 @interface SJEdgeControlLayerAdapters ()
@@ -102,7 +155,7 @@ _isIPhoneXSeries(void) {
             CGFloat viewW = curr.size.width;
             CGFloat viewH = curr.size.height;
             
-            BOOL isFullscreen = (viewW == _screen.max) && (viewH == _screen.min);
+            BOOL isFullscreen = _SJNeedsFullscreenLayout(self, _screen);
             
             if ( isFullscreen ) {
                 [self _updateLayout_isFullscreen_iPhone_X];
@@ -160,7 +213,7 @@ _isIPhoneXSeries(void) {
         CGFloat safeLeftMargin = ceil((_screen.max - safeWidth) * 0.5);
         
         [_topAdapter.view mas_remakeConstraints:^(MASConstraintMaker *make) {
-            make.top.offset(self.autoAdjustTopSpacing?20:self.topMargin);
+            make.top.offset(self.autoAdjustTopSpacing && _SJNeedsTopSpacing(self) ? 20 : self.topMargin);
             make.left.mas_greaterThanOrEqualTo(0).priorityLow();
             make.bottom.offset(0);
             make.right.mas_lessThanOrEqualTo(0).priorityLow();
@@ -200,19 +253,13 @@ _isIPhoneXSeries(void) {
 }
 
 - (void)_observeNotifies {
-    __weak typeof(self) _self = self;
-    _notifyToken = [NSNotificationCenter.defaultCenter addObserverForName:UIApplicationWillChangeStatusBarOrientationNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
-        __strong typeof(_self) self = _self;
-        if ( !self ) return;
-        [self _updateTopLayout:note];
-    }];
 }
 
 - (void)_updateTopLayout:(nullable NSNotification *)notify {
     if ( !_topAdapter ) return;
     if ( _screen.is_iPhoneXSeries && _autoAdjustLayoutWhenDeviceIsIPhoneXSeries ) return;
     [UIView animateWithDuration:0 animations:^{} completion:^(BOOL finished) {
-        UIInterfaceOrientation orientation = notify?[notify.userInfo[UIApplicationStatusBarOrientationUserInfoKey] integerValue]: UIApplication.sharedApplication.statusBarOrientation;
+        UIInterfaceOrientation orientation = _SJCurrentInterfaceOrientation(self);
         switch ( orientation ) {
             case UIInterfaceOrientationUnknown: break;
             case UIInterfaceOrientationPortrait:
@@ -223,7 +270,7 @@ _isIPhoneXSeries(void) {
                         make.left.equalTo(self.topContainerView.mas_safeAreaLayoutGuideLeft);
                         make.right.equalTo(self.topContainerView.mas_safeAreaLayoutGuideRight);
                     } else {
-                        make.top.offset(self.topMargin + ((self.isFitOnScreen && self.autoAdjustTopSpacing) ? 20 : 0));
+                        make.top.offset(self.topMargin + ((self.isFitOnScreen && self.autoAdjustTopSpacing && _SJNeedsTopSpacing(self)) ? 20 : 0));
                         make.left.right.offset(0);
                     }
                     make.bottom.offset(0);
@@ -234,7 +281,7 @@ _isIPhoneXSeries(void) {
             case UIInterfaceOrientationLandscapeLeft:
             case UIInterfaceOrientationLandscapeRight: {
                 [self.topAdapter.view mas_remakeConstraints:^(MASConstraintMaker *make) {
-                    make.top.offset(self.topMargin + (self.isFitOnScreen && self.autoAdjustTopSpacing ? 20 : 0)); // 统一 20
+                    make.top.offset(self.topMargin + (self.isFitOnScreen && self.autoAdjustTopSpacing && _SJNeedsTopSpacing(self) ? 20 : 0));
                     if (@available(iOS 11.0, *)) {
                         make.left.equalTo(self.topContainerView.mas_safeAreaLayoutGuideLeft);
                         make.right.equalTo(self.topContainerView.mas_safeAreaLayoutGuideRight);

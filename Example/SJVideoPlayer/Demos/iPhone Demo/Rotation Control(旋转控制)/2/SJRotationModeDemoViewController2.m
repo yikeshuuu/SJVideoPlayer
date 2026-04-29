@@ -11,6 +11,7 @@
 #import <SJUIKit/SJUIKit.h>
 #import <SJVideoPlayer/SJVideoPlayer.h>
 #import <SJBaseVideoPlayer/UIScrollView+ListViewAutoplaySJAdd.h>
+#import <SJBaseVideoPlayer/SJWindowResolver.h>
 #import <Masonry/Masonry.h>
 
 @implementation UIAlertController (SJAdditions)
@@ -49,7 +50,7 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"OK" style:0 handler:^(UIAlertAction * _Nonnull action) {}]];
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        [UIApplication.sharedApplication.keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+        [SJTopViewControllerForView(self.view) presentViewController:alertController animated:YES completion:nil];
     });
 }
  

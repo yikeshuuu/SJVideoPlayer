@@ -9,6 +9,7 @@
 #import "SJRotationManager_iOS_16_Later.h"
 #import "SJRotationManagerInternal.h"
 #import "SJRotationFullscreenViewController.h"
+#import "SJWindowResolver.h"
 
 API_AVAILABLE(ios(16.0))
 @interface SJRotationPortraitOrientationFixingWindow : UIWindow
@@ -20,7 +21,16 @@ API_AVAILABLE(ios(16.0))
     static id instance;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        instance = [SJRotationPortraitOrientationFixingWindow.alloc initWithWindowScene:UIApplication.sharedApplication.keyWindow.windowScene ?: (UIWindowScene *)UIApplication.sharedApplication.connectedScenes.anyObject];
+        UIWindowScene *windowScene = nil;
+        if ( @available(iOS 13.0, *) ) {
+            windowScene = SJWindowSceneForView(nil);
+        }
+        if ( windowScene != nil ) {
+            instance = [SJRotationPortraitOrientationFixingWindow.alloc initWithWindowScene:windowScene];
+        }
+        else {
+            instance = [SJRotationPortraitOrientationFixingWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
+        }
     });
     return instance;
 }
@@ -223,12 +233,13 @@ API_AVAILABLE(ios(16.0)) @protocol _SJ_iOS_16_IDE_InvisibleMethods <NSObject>
 }
 
 - (void)setNeedsUpdateOfSupportedInterfaceOrientations {
+    UIViewController *rootViewController = SJRootViewControllerForView(self.superview);
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 160000
-    [UIApplication.sharedApplication.keyWindow.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
+    [rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
     [self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
 #else
     if ( [self.window.rootViewController respondsToSelector:@selector(setNeedsUpdateOfSupportedInterfaceOrientations)] ) {
-        [(id)UIApplication.sharedApplication.keyWindow.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
+        [(id)rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
         [(id)self.window.rootViewController setNeedsUpdateOfSupportedInterfaceOrientations];
     }
     else {

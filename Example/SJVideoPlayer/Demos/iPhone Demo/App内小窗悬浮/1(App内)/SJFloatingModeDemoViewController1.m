@@ -10,6 +10,7 @@
 #import <SJVideoPlayer/SJVideoPlayer.h>
 #import <Masonry/Masonry.h>
 #import <SJUIKit/NSAttributedString+SJMake.h>
+#import <SJBaseVideoPlayer/SJWindowResolver.h>
 #import "SJSourceURLs.h"
 #import "SJSmallViewFloatingTransitionController.h"
 
@@ -21,7 +22,7 @@
 @implementation SJFloatingModeDemoViewController1
 // step 1
 + (instancetype)viewControllerWithVideoId:(NSInteger)videoId {
-    UIWindow *window = UIApplication.sharedApplication.keyWindow;
+    UIWindow *window = SJPreferredWindowForView(nil);
     SJFloatingModeDemoViewController1 *instance = nil;
     // compare videoId
     // 比较videoId, 确认是否正在悬浮播放

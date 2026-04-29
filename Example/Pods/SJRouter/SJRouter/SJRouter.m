@@ -8,21 +8,11 @@
 #import "SJRouter.h"
 #import <objc/message.h>
 #import "SJRouteObject+Private.h"
+#import <SJBaseVideoPlayer/SJWindowResolver.h>
 
 NS_ASSUME_NONNULL_BEGIN
 static UIViewController *_sj_get_top_view_controller() {
-    UIViewController *vc = UIApplication.sharedApplication.keyWindow.rootViewController;
-    while (  [vc isKindOfClass:[UINavigationController class]] ||
-             [vc isKindOfClass:[UITabBarController class]] ||
-              vc.presentedViewController ) {
-        if ( [vc isKindOfClass:[UINavigationController class]] )
-            vc = [(UINavigationController *)vc topViewController];
-        if ( [vc isKindOfClass:[UITabBarController class]] )
-            vc = [(UITabBarController *)vc selectedViewController];
-        if ( vc.presentedViewController )
-            vc = vc.presentedViewController;
-    }
-    return vc;
+    return SJTopViewControllerForView(nil);
 }
 
 @interface SJRouter()

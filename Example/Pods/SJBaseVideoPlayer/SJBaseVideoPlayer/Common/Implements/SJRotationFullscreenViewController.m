@@ -7,6 +7,7 @@
 //
 
 #import "SJRotationFullscreenViewController.h"
+#import "SJWindowResolver.h"
 
 @interface SJRotationFullscreenView : UIView
 @end
@@ -15,7 +16,7 @@
 - (UIEdgeInsets)safeAreaInsets {
     CGSize size = self.bounds.size;
     if ( size.width > size.height ) return [super safeAreaInsets];
-    return [UIApplication.sharedApplication.keyWindow safeAreaInsets];
+    return SJSafeAreaInsetsForView(self);
 }
 @end
 

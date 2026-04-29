@@ -8,6 +8,7 @@
 
 #import "SJApplicationInfo.h"
 #import "NSDate+SJAdded.h"
+#import <SJBaseVideoPlayer/SJWindowResolver.h>
 #import <sys/utsname.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -54,24 +55,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (nullable __kindof UIViewController *)topViewController {
-    __kindof UIViewController *_Nullable vc = UIApplication.sharedApplication.keyWindow.rootViewController;
-    while (  [vc isKindOfClass:[UINavigationController class]] ||
-             [vc isKindOfClass:[UITabBarController class]] ||
-             [vc presentedViewController] ) {
-        
-        if ( [vc isKindOfClass:[UINavigationController class]] ) {
-            vc = [(UINavigationController *)vc topViewController];
-        }
-        
-        if ( [vc isKindOfClass:[UITabBarController class]] ) {
-            vc = [(UITabBarController *)vc selectedViewController];
-        }
-        
-        while ( vc.presentedViewController ) {
-            vc = vc.presentedViewController;
-        }
-    }
-    return vc;
+    return SJTopViewControllerForView(nil);
 }
 
 - (NSString *)machineModel {
